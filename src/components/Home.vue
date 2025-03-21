@@ -457,44 +457,64 @@ export default {
       });
 
       // Обработка движений мыши для эффекта наведения
+// Updated mousemove event handler in createFeaturedProjects method
       window.addEventListener('mousemove', (event) => {
         const rect = renderer.domElement.getBoundingClientRect();
 
+        // Check if mouse is within the renderer's bounds
         if (
             event.clientX >= rect.left &&
             event.clientX <= rect.right &&
             event.clientY >= rect.top &&
             event.clientY <= rect.bottom
         ) {
+          // Calculate normalized mouse coordinates
           mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
           mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
+          // Update the raycaster with mouse position
           raycaster.setFromCamera(mouse, camera);
-          const intersects = raycaster.intersectObjects(projectObjects);
+
+          // Cast ray and get intersections with project objects
+          const intersects = raycaster.intersectObjects(projectObjects, true); // Added 'true' to also check child objects
 
           if (intersects.length > 0) {
-            const object = intersects[0].object;
+            // Get the top-level parent object if we hit a child
+            let hitObject = intersects[0].object;
 
-            if (hoveredObject !== object) {
-              // Сбрасываем предыдущий эффект наведения
-              if (hoveredObject && hoveredObject !== selectedObject) {
-                this.resetProjectHover(hoveredObject);
+            // If we hit a child (text mesh), get its parent
+            while (hitObject.parent && projectObjects.indexOf(hitObject) === -1) {
+              hitObject = hitObject.parent;
+            }
+
+            // Only process if it's one of our project objects
+            if (projectObjects.includes(hitObject)) {
+              if (hoveredObject !== hitObject) {
+                // Reset previous hover state
+                if (hoveredObject && hoveredObject !== selectedObject) {
+                  this.resetProjectHover(hoveredObject);
+                }
+
+                // Set new hover state
+                hoveredObject = hitObject;
+                this.setProjectHover(hoveredObject);
               }
-
-              // Устанавливаем новый эффект наведения
-              hoveredObject = object;
-              this.setProjectHover(hoveredObject);
             }
           } else {
-            // Сбрасываем эффект наведения при отсутствии пересечений
+            // No intersection - reset hover if needed
             if (hoveredObject && hoveredObject !== selectedObject) {
               this.resetProjectHover(hoveredObject);
               hoveredObject = null;
             }
           }
+        } else {
+          // Mouse outside renderer - reset hover if needed
+          if (hoveredObject && hoveredObject !== selectedObject) {
+            this.resetProjectHover(hoveredObject);
+            hoveredObject = null;
+          }
         }
       });
-
       // Анимация проектов
       const animate = () => {
         requestAnimationFrame(animate);
