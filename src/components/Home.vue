@@ -73,11 +73,6 @@
         </a>
       </div>
     </div>
-
-    <!-- Футер -->
-    <footer class="footer">
-      <p>&copy; 2025 Глеб Титов. Все права защищены.</p>
-    </footer>
   </div>
 </template>
 
@@ -684,7 +679,6 @@ export default {
   position: relative;
   color: white;
   font-family: 'Poppins', Arial, sans-serif;
-  background-color: #121212;
 }
 
 .background {
@@ -734,7 +728,6 @@ export default {
   font-size: 1.8rem;
   font-weight: 300;
   line-height: 1.6;
-  background: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   backdrop-filter: blur(5px);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
@@ -833,7 +826,6 @@ export default {
 .featured-projects {
   padding: 6rem 2rem;
   text-align: center;
-  background: rgba(0, 0, 0, 0.2);
 }
 
 .projects-showcase {
@@ -909,7 +901,6 @@ export default {
   text-decoration: none;
   color: white;
   padding: 1rem 2rem;
-  background: rgba(0, 0, 0, 0.3);
   border-radius: 50px;
   transition: all 0.3s ease;
   font-size: 1.1rem;
@@ -931,7 +922,6 @@ export default {
   padding: 2rem;
   text-align: center;
   margin-top: 2rem;
-  background: rgba(0, 0, 0, 0.5);
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.7);
 }
