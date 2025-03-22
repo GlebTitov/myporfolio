@@ -4,6 +4,10 @@
     <div class="intro" ref="introContainer">
       <h1 class="title" ref="title">Глеб Титов</h1>
       <p class="subtitle" ref="subtitle">Фронтенд-разработчик и 3D-энтузиаст</p>
+      <!-- Добавленный индикатор прокрутки -->
+      <div class="scroll-indicator" ref="scrollIndicator">
+        <div class="scroll-arrow"></div>
+      </div>
     </div>
 
     <!-- 3D фон с плавно движущимися элементами -->
@@ -76,600 +80,194 @@
   </div>
 </template>
 
-<script>
-import * as THREE from 'three';
+<script setup>
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
 import anime from 'animejs';
+import PortfolioThreeJS from '../PortfolioThreeJS';
 
-export default {
-  name: 'Home',
-  data() {
-    return {
-      projects: [
-        {
-          title: '3D Интерактивная галерея',
-          image: 'project1.jpg',
-          description: 'Иммерсивная 3D галерея с интерактивными элементами и динамической навигацией.',
-          link: '#project1'
-        },
-        {
-          title: 'WebGL Эксперимент',
-          image: 'project2.jpg',
-          description: 'Визуальный эксперимент с использованием WebGL для создания динамических визуальных эффектов.',
-          link: '#project2'
-        },
-        {
-          title: 'Vue Dashboard',
-          image: 'project3.jpg',
-          description: 'Современная интерактивная панель управления, разработанная с использованием Vue.js и D3.',
-          link: '#project3'
-        }
-      ],
-      currentProject: null,
-      isIntersecting: {},
-      observer: null
-    }
+// Рефы
+const introContainer = ref(null);
+const title = ref(null);
+const subtitle = ref(null);
+const scrollIndicator = ref(null);
+const backgroundScene = ref(null);
+const aboutIntro = ref(null);
+const aboutSection = ref(null);
+const aboutText = ref(null);
+const profileContainer = ref(null);
+const skillsList = ref(null);
+const featuredProjects = ref(null);
+const projectsShowcase = ref(null);
+const projectDetails = ref(null);
+const projectInfo = ref(null);
+const projectTitle = ref(null);
+const projectDescription = ref(null);
+const projectLink = ref(null);
+const contactSection = ref(null);
+const contactLinks = ref(null);
+
+// Реактивные данные
+const projects = reactive([
+  {
+    title: '3D Интерактивная галерея',
+    image: 'project1.jpg',
+    description: 'Иммерсивная 3D галерея с интерактивными элементами и динамической навигацией.',
+    link: '#project1'
   },
-  mounted() {
-    this.initThreeJS();
-    this.animateIntro();
-    this.createFeaturedProjects();
-    this.createProfileVisualization();
-    this.initIntersectionObserver();
-    this.animateSkillsList();
+  {
+    title: 'WebGL Эксперимент',
+    image: 'project2.jpg',
+    description: 'Визуальный эксперимент с использованием WebGL для создания динамических визуальных эффектов.',
+    link: '#project2'
   },
-  methods: {
-    initThreeJS() {
-      // Инициализация Three.js для фона с улучшенной визуализацией
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      this.$refs.backgroundScene.appendChild(renderer.domElement);
-
-      // Создание более разнообразных и визуально интересных 3D объектов в фоне
-      const geometries = [
-        new THREE.IcosahedronGeometry(1, 0),
-        new THREE.OctahedronGeometry(1, 0),
-        new THREE.TetrahedronGeometry(1, 0),
-        new THREE.DodecahedronGeometry(1, 0)
-      ];
-
-      const materials = [
-        new THREE.MeshPhongMaterial({
-          color: 0x2194ce,
-          wireframe: true,
-          transparent: true,
-          opacity: 0.8
-        }),
-        new THREE.MeshPhongMaterial({
-          color: 0x21ce93,
-          wireframe: true,
-          transparent: true,
-          opacity: 0.7
-        }),
-        new THREE.MeshPhongMaterial({
-          color: 0xce2179,
-          wireframe: true,
-          transparent: true,
-          opacity: 0.6
-        })
-      ];
-
-      // Создаем больше объектов с разнообразными формами и цветами
-      for (let i = 0; i < 20; i++) {
-        const geometry = geometries[Math.floor(Math.random() * geometries.length)];
-        const material = materials[Math.floor(Math.random() * materials.length)];
-        const mesh = new THREE.Mesh(geometry, material);
-
-        mesh.position.x = (Math.random() - 0.5) * 30;
-        mesh.position.y = (Math.random() - 0.5) * 30;
-        mesh.position.z = (Math.random() - 0.5) * 15 - 10;
-        mesh.scale.setScalar(Math.random() * 0.8 + 0.6);
-        mesh.userData = {
-          rotationSpeed: {
-            x: Math.random() * 0.01 - 0.005,
-            y: Math.random() * 0.01 - 0.005,
-            z: Math.random() * 0.01 - 0.005
-          },
-          movementAmplitude: Math.random() * 0.05 + 0.02,
-          movementFrequency: Math.random() * 0.002 + 0.001,
-          phase: Math.random() * Math.PI * 2
-        };
-
-        scene.add(mesh);
-      }
-
-      // Улучшенное освещение
-      const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
-      light1.position.set(1, 1, 5);
-      scene.add(light1);
-
-      const light2 = new THREE.DirectionalLight(0x8080ff, 0.5);
-      light2.position.set(-1, -1, 5);
-      scene.add(light2);
-
-      const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-      scene.add(ambientLight);
-
-      camera.position.z = 5;
-
-      // Анимация фоновых объектов с более плавными и разнообразными движениями
-      const animate = () => {
-        requestAnimationFrame(animate);
-
-        scene.children.forEach(child => {
-          if (child instanceof THREE.Mesh) {
-            const userData = child.userData;
-
-            // Более плавное вращение
-            child.rotation.x += userData.rotationSpeed.x;
-            child.rotation.y += userData.rotationSpeed.y;
-            child.rotation.z += userData.rotationSpeed.z;
-
-            // Более естественное колебательное движение по разным осям
-            const time = Date.now() * userData.movementFrequency;
-            child.position.y += Math.sin(time + userData.phase) * userData.movementAmplitude;
-            child.position.x += Math.sin(time * 0.8 + userData.phase) * userData.movementAmplitude * 0.5;
-          }
-        });
-
-        renderer.render(scene, camera);
-      };
-
-      animate();
-
-      // Обработка изменения размера окна
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-    },
-
-    animateIntro() {
-      // Улучшенная анимация заголовка с Anime.js
-      const timeline = anime.timeline({
-        easing: 'easeOutExpo'
-      });
-
-      timeline
-          .add({
-            targets: this.$refs.title,
-            opacity: [0, 1],
-            translateY: [70, 0],
-            rotateX: [90, 0],
-            duration: 1500
-          })
-          .add({
-            targets: this.$refs.subtitle,
-            opacity: [0, 1],
-            translateY: [50, 0],
-            duration: 1200,
-            offset: '-=1000'
-          })
-          .add({
-            targets: this.$refs.aboutIntro,
-            opacity: [0, 1],
-            translateY: [50, 0],
-            duration: 1200,
-            offset: '-=800'
-          });
-
-      // Создаем эффект "печатающегося текста" для подзаголовка
-      const subtitleText = "Фронтенд-разработчик и 3D-энтузиаст";
-      this.$refs.subtitle.innerHTML = "";
-      let i = 0;
-
-      setTimeout(() => {
-        const typeInterval = setInterval(() => {
-          if (i < subtitleText.length) {
-            this.$refs.subtitle.innerHTML += subtitleText.charAt(i);
-            i++;
-          } else {
-            clearInterval(typeInterval);
-          }
-        }, 50);
-      }, 500);
-    },
-
-    createProfileVisualization() {
-      // Создание 3D визуализации для профиля
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-
-      // Устанавливаем размер для квадратной визуализации
-      const size = Math.min(this.$refs.profileContainer.clientWidth, 300);
-      renderer.setSize(size, size);
-      this.$refs.profileContainer.appendChild(renderer.domElement);
-
-      // Позиционирование камеры
-      camera.position.z = 5;
-
-      // Создаем сферу с интересной геометрией для представления профиля
-      const geometry = new THREE.SphereGeometry(2, 32, 32);
-
-      // Модифицируем геометрию для более интересного эффекта
-      for (let i = 0; i < geometry.attributes.position.count; i++) {
-        const x = geometry.attributes.position.getX(i);
-        const y = geometry.attributes.position.getY(i);
-        const z = geometry.attributes.position.getZ(i);
-
-        const noise = 0.2 * Math.sin(5 * x) * Math.sin(5 * y) * Math.sin(5 * z);
-
-        geometry.attributes.position.setX(i, x * (1 + noise));
-        geometry.attributes.position.setY(i, y * (1 + noise));
-        geometry.attributes.position.setZ(i, z * (1 + noise));
-      }
-
-      geometry.computeVertexNormals();
-
-      // Создаем градиентный материал
-      const material = new THREE.MeshPhongMaterial({
-        color: 0x2194ce,
-        specular: 0x555555,
-        shininess: 30,
-        wireframe: false,
-        transparent: true,
-        opacity: 0.9
-      });
-
-      const sphere = new THREE.Mesh(geometry, material);
-      scene.add(sphere);
-
-      // Добавляем свет
-      const light1 = new THREE.DirectionalLight(0xffffff, 1);
-      light1.position.set(5, 5, 5);
-      scene.add(light1);
-
-      const light2 = new THREE.DirectionalLight(0x8080ff, 0.5);
-      light2.position.set(-5, -5, 5);
-      scene.add(light2);
-
-      const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
-      scene.add(ambientLight);
-
-      // Анимация профиля
-      const animate = () => {
-        requestAnimationFrame(animate);
-
-        sphere.rotation.x += 0.005;
-        sphere.rotation.y += 0.01;
-
-        renderer.render(scene, camera);
-      };
-
-      animate();
-    },
-
-    createFeaturedProjects() {
-      // Создание улучшенного 3D предпросмотра проектов
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(60, this.$refs.projectsShowcase.clientWidth / this.$refs.projectsShowcase.clientHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-
-      renderer.setSize(this.$refs.projectsShowcase.clientWidth, this.$refs.projectsShowcase.clientHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      this.$refs.projectsShowcase.appendChild(renderer.domElement);
-
-      // Добавляем управление камерой для интерактивности
-      camera.position.z = 5;
-
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-      let hoveredObject = null;
-      let selectedObject = null;
-
-      const projectObjects = [];
-
-      // Имитация загрузки текстур
-      const textures = [
-        { color: 0x3498db },  // Синий
-        { color: 0x2ecc71 },  // Зеленый
-        { color: 0xe74c3c }   // Красный
-      ];
-
-      this.projects.forEach((project, index) => {
-        // Создаем интересную геометрию для карточек проектов
-        const geometry = new THREE.BoxGeometry(2.5, 1.6, 0.2);
-
-        // Создаем материал с градиентом и подсветкой
-        const material = new THREE.MeshPhongMaterial({
-          color: textures[index].color,
-          specular: 0xffffff,
-          shininess: 100,
-          emissive: 0x111111,
-          transparent: true,
-          opacity: 0.9
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.x = (index - 1) * 3.2;
-        mesh.userData = {
-          title: project.title,
-          index,
-          description: project.description,
-          link: project.link,
-          originalPosition: mesh.position.clone(),
-          originalRotation: mesh.rotation.clone(),
-          hoverState: false
-        };
-
-        // Добавляем текст проекта
-        const textGeometry = new THREE.PlaneGeometry(2, 0.5);
-        const textCanvas = document.createElement('canvas');
-        textCanvas.width = 512;
-        textCanvas.height = 128;
-        const context = textCanvas.getContext('2d');
-        context.fillStyle = 'white';
-        context.font = 'bold 36px Arial';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        context.fillText(project.title, 256, 64);
-
-        const textTexture = new THREE.Texture(textCanvas);
-        textTexture.needsUpdate = true;
-
-        const textMaterial = new THREE.MeshBasicMaterial({
-          map: textTexture,
-          transparent: true
-        });
-
-        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        textMesh.position.z = 0.11;
-        textMesh.position.y = -0.5;
-
-        mesh.add(textMesh);
-
-        projectObjects.push(mesh);
-        scene.add(mesh);
-      });
-
-      // Добавляем улучшенное освещение
-      const light = new THREE.PointLight(0xffffff, 1);
-      light.position.set(0, 0, 5);
-      scene.add(light);
-
-      const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-      scene.add(ambientLight);
-
-      // Обработка нажатий на проекты
-      window.addEventListener('click', (event) => {
-        if (hoveredObject) {
-          this.showProjectDetails(hoveredObject.userData);
-          selectedObject = hoveredObject;
-
-          // Анимируем выбранный проект
-          anime({
-            targets: hoveredObject.position,
-            y: hoveredObject.position.y + 0.2,
-            duration: 300,
-            easing: 'easeOutQuad'
-          });
-        }
-      });
-
-      // Обработка движений мыши для эффекта наведения
-// Updated mousemove event handler in createFeaturedProjects method
-      window.addEventListener('mousemove', (event) => {
-        const rect = renderer.domElement.getBoundingClientRect();
-
-        // Check if mouse is within the renderer's bounds
-        if (
-            event.clientX >= rect.left &&
-            event.clientX <= rect.right &&
-            event.clientY >= rect.top &&
-            event.clientY <= rect.bottom
-        ) {
-          // Calculate normalized mouse coordinates
-          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-          // Update the raycaster with mouse position
-          raycaster.setFromCamera(mouse, camera);
-
-          // Cast ray and get intersections with project objects
-          const intersects = raycaster.intersectObjects(projectObjects, true); // Added 'true' to also check child objects
-
-          if (intersects.length > 0) {
-            // Get the top-level parent object if we hit a child
-            let hitObject = intersects[0].object;
-
-            // If we hit a child (text mesh), get its parent
-            while (hitObject.parent && projectObjects.indexOf(hitObject) === -1) {
-              hitObject = hitObject.parent;
-            }
-
-            // Only process if it's one of our project objects
-            if (projectObjects.includes(hitObject)) {
-              if (hoveredObject !== hitObject) {
-                // Reset previous hover state
-                if (hoveredObject && hoveredObject !== selectedObject) {
-                  this.resetProjectHover(hoveredObject);
-                }
-
-                // Set new hover state
-                hoveredObject = hitObject;
-                this.setProjectHover(hoveredObject);
-              }
-            }
-          } else {
-            // No intersection - reset hover if needed
-            if (hoveredObject && hoveredObject !== selectedObject) {
-              this.resetProjectHover(hoveredObject);
-              hoveredObject = null;
-            }
-          }
-        } else {
-          // Mouse outside renderer - reset hover if needed
-          if (hoveredObject && hoveredObject !== selectedObject) {
-            this.resetProjectHover(hoveredObject);
-            hoveredObject = null;
-          }
-        }
-      });
-      // Анимация проектов
-      const animate = () => {
-        requestAnimationFrame(animate);
-
-        projectObjects.forEach(mesh => {
-          if (!mesh.userData.hoverState && mesh !== selectedObject) {
-            mesh.rotation.y = Math.sin(Date.now() * 0.001 + mesh.userData.index * 0.5) * 0.15;
-            mesh.position.y = mesh.userData.originalPosition.y + Math.sin(Date.now() * 0.002 + mesh.userData.index) * 0.05;
-          }
-        });
-
-        renderer.render(scene, camera);
-      };
-
-      animate();
-
-      // Обработка изменения размера окна
-      window.addEventListener('resize', () => {
-        camera.aspect = this.$refs.projectsShowcase.clientWidth / this.$refs.projectsShowcase.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(this.$refs.projectsShowcase.clientWidth, this.$refs.projectsShowcase.clientHeight);
-      });
-    },
-
-    setProjectHover(object) {
-      object.userData.hoverState = true;
-
-      // Анимируем эффект наведения
-      anime({
-        targets: object.position,
-        y: object.userData.originalPosition.y + 0.3,
-        z: object.userData.originalPosition.z + 0.5,
-        duration: 300,
-        easing: 'easeOutQuad'
-      });
-
-      anime({
-        targets: object.rotation,
-        y: 0,
-        duration: 300,
-        easing: 'easeOutQuad'
-      });
-
-      // Изменяем материал для эффекта наведения
-      object.material.emissive.set(0x333333);
-    },
-
-    resetProjectHover(object) {
-      object.userData.hoverState = false;
-
-      // Восстанавливаем позицию
-      anime({
-        targets: object.position,
-        y: object.userData.originalPosition.y,
-        z: object.userData.originalPosition.z,
-        duration: 300,
-        easing: 'easeOutQuad'
-      });
-
-      // Восстанавливаем материал
-      object.material.emissive.set(0x111111);
-    },
-
-    showProjectDetails(projectData) {
-      // Показываем детали проекта при клике
-      const projectInfo = this.$refs.projectInfo;
-      const projectTitle = this.$refs.projectTitle;
-      const projectDescription = this.$refs.projectDescription;
-      const projectLink = this.$refs.projectLink;
-
-      // Сначала скрываем информацию
-      anime({
-        targets: projectInfo,
-        opacity: 0,
-        translateY: 20,
-        duration: 200,
-        easing: 'easeOutQuad',
-        complete: () => {
-          // Обновляем содержимое
-          projectTitle.textContent = projectData.title;
-          projectDescription.textContent = projectData.description;
-          projectLink.href = projectData.link;
-
-          // Показываем обновленную информацию
-          anime({
-            targets: projectInfo,
-            opacity: 1,
-            translateY: 0,
-            duration: 500,
-            easing: 'easeOutQuad'
-          });
-
-          projectInfo.classList.remove('hidden');
-        }
-      });
-    },
-
-    animateSkillsList() {
-      // Анимация списка навыков
-      anime({
-        targets: this.$refs.skillsList.children,
-        translateX: [50, 0],
-        opacity: [0, 1],
-        duration: 1000,
-        delay: anime.stagger(100),
-        easing: 'easeOutExpo'
-      });
-    },
-
-    initIntersectionObserver() {
-      // Создаем наблюдатель пересечений для анимации элементов при прокрутке
-      const options = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.1
-      };
-
-      this.observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && !this.isIntersecting[entry.target.id]) {
-            this.isIntersecting[entry.target.id] = true;
-
-            // Анимируем элемент при первом появлении
-            anime({
-              targets: entry.target,
-              translateY: [50, 0],
-              opacity: [0, 1],
-              duration: 800,
-              easing: 'easeOutExpo'
-            });
-          }
-        });
-      }, options);
-
-      // Элементы для наблюдения
-      const sections = [
-        this.$refs.aboutSection,
-        this.$refs.aboutText,
-        this.$refs.featuredProjects,
-        this.$refs.contactSection,
-        this.$refs.contactLinks
-      ];
-
-      sections.forEach((section, index) => {
-        section.id = `section-${index}`;
-        this.observer.observe(section);
-      });
-    }
-  },
-  beforeDestroy() {
-    // Очистка ресурсов перед уничтожением компонента
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-
-    window.removeEventListener('resize', null);
-    window.removeEventListener('mousemove', null);
-    window.removeEventListener('click', null);
+  {
+    title: 'Vue Dashboard',
+    image: 'project3.jpg',
+    description: 'Современная интерактивная панель управления, разработанная с использованием Vue.js и D3.',
+    link: '#project3'
   }
-}
+]);
+
+// Состояние
+const state = reactive({
+  portfolio3D: null,
+  currentProject: null,
+  isIntersecting: {},
+  observer: null
+});
+
+// Методы
+const showProjectDetails = (projectData) => {
+  // Показываем детали проекта при клике
+  const projectInfoEl = projectInfo.value;
+  const projectTitleEl = projectTitle.value;
+  const projectDescriptionEl = projectDescription.value;
+  const projectLinkEl = projectLink.value;
+
+  // Сначала скрываем информацию
+  anime({
+    targets: projectInfoEl,
+    opacity: 0,
+    translateY: 20,
+    duration: 200,
+    easing: 'easeOutQuad',
+    complete: () => {
+      // Обновляем содержимое
+      projectTitleEl.textContent = projectData.title;
+      projectDescriptionEl.textContent = projectData.description;
+      projectLinkEl.href = projectData.link;
+
+      // Показываем обновленную информацию
+      anime({
+        targets: projectInfoEl,
+        opacity: 1,
+        translateY: 0,
+        duration: 500,
+        easing: 'easeOutQuad'
+      });
+
+      projectInfoEl.classList.remove('hidden');
+    }
+  });
+};
+
+const initIntersectionObserver = () => {
+  // Создаем наблюдатель пересечений для анимации элементов при прокрутке
+  const options = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.1
+  };
+
+  state.observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !state.isIntersecting[entry.target.id]) {
+        state.isIntersecting[entry.target.id] = true;
+
+        // Анимируем элемент при первом появлении
+        anime({
+          targets: entry.target,
+          translateY: [50, 0],
+          opacity: [0, 1],
+          duration: 800,
+          easing: 'easeOutExpo'
+        });
+      }
+    });
+  }, options);
+
+  // Элементы для наблюдения
+  const sections = [
+    aboutSection.value,
+    aboutText.value,
+    featuredProjects.value,
+    contactSection.value,
+    contactLinks.value
+  ];
+
+  sections.forEach((section, index) => {
+    section.id = `section-${index}`;
+    state.observer.observe(section);
+  });
+};
+
+// Инициализация портфолио с использованием класса PortfolioThreeJS
+const initPortfolio = () => {
+  // Создаем экземпляр класса
+  const portfolio3D = new PortfolioThreeJS();
+  state.portfolio3D = portfolio3D;
+
+  // Инициализируем фоновую сцену
+  portfolio3D.initBackgroundScene(backgroundScene.value);
+
+  // Создаем частицы для интро
+  portfolio3D.createParticles(introContainer.value);
+
+  // Анимируем появление заголовка и подзаголовка
+  portfolio3D.animateIntro({
+    title: title.value,
+    subtitle: subtitle.value,
+    aboutIntro: aboutIntro.value,
+    scrollIndicator: scrollIndicator.value
+  });
+
+  // Добавляем 3D модель автомобиля в интро
+  portfolio3D.addCarToIntro(introContainer.value);
+
+  // Инициализируем 3D визуализацию профиля
+  portfolio3D.initProfileVisualization(profileContainer.value);
+
+  // Инициализируем 3D предпросмотр проектов
+  portfolio3D.initProjectsShowcase(projectsShowcase.value, projects);
+
+  // Добавляем обработчик события выбора проекта
+  projectsShowcase.value.addEventListener('project-selected', (event) => {
+    showProjectDetails(event.detail);
+  });
+
+  // Анимируем список навыков
+  portfolio3D.animateSkillsList(skillsList.value);
+
+  // Инициализируем наблюдатель пересечений
+  initIntersectionObserver();
+};
+
+// Хуки жизненного цикла
+onMounted(() => {
+  initPortfolio();
+});
+
+onBeforeUnmount(() => {
+  // Очистка ресурсов перед уничтожением компонента
+  if (state.observer) {
+    state.observer.disconnect();
+  }
+
+  // Очистка через метод класса
+  if (state.portfolio3D) {
+    state.portfolio3D.dispose();
+  }
+});
 </script>
 
 <style scoped>
@@ -918,12 +516,67 @@ export default {
   position: relative;
 }
 
-.footer {
-  padding: 2rem;
-  text-align: center;
-  margin-top: 2rem;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+.scroll-arrow {
+  width: 30px;
+  height: 30px;
+  border-right: 3px solid white;
+  border-bottom: 3px solid white;
+  transform: rotate(45deg);
+  margin: 0 auto;
+  animation: scroll-arrow 2s infinite;
+}
+
+@keyframes scroll-arrow {
+  0% {
+    transform: rotate(45deg) translate(-5px, -5px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(45deg) translate(5px, 5px);
+    opacity: 0;
+  }
+}
+
+.particles-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: float linear infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.car-container {
+  transition: all 0.5s ease;
+}
+
+.car-container:hover {
+  transform: scale(1.05);
 }
 
 @media (max-width: 768px) {
