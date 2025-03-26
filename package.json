@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lottiefiles/dotlottie-vue": "^0.6.0",
     "@types/three": "^0.174.0",
     "animejs": "^3.2.2",
     "three": "^0.174.0",

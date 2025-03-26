@@ -2,463 +2,387 @@
   <div class="about">
     <h1 class="heading" ref="heading">Обо мне</h1>
 
-    <!-- 3D модель, представляющая вас -->
-    <div class="model-container" ref="modelContainer"></div>
-
-    <div class="content-container">
-      <!-- Биография -->
-      <div class="bio" ref="bio">
-        <p>Краткая биография и информация о себе, которая появляется при скролле.</p>
-      </div>
-
-      <!-- Анимированный график навыков -->
-      <div class="skills-section">
-        <h2 ref="skillsHeading">Мои навыки</h2>
-        <div class="skills-container" ref="skillsContainer">
-          <div class="skill" v-for="skill in skills" :key="skill.name">
-            <span class="skill-name">{{ skill.name }}</span>
-            <div class="skill-bar-container">
-              <div class="skill-bar" :data-percentage="skill.level"></div>
-            </div>
-            <span class="skill-percentage">{{ skill.level }}%</span>
-          </div>
+    <div class="content-wrapper">
+      <!-- Lottie анимация -->
+      <div class="profile-visual">
+        <div class="gif-container">
+          <img src="/src/developer-animation.gif" alt="Developer Animation" class="profile-gif">
         </div>
       </div>
 
-      <!-- Интерактивная 3D временная шкала -->
-      <div class="timeline-section">
-        <h2 ref="timelineHeading">Мой опыт</h2>
-        <div class="timeline-container" ref="timelineContainer"></div>
+      <div class="info-section">
+        <!-- Биография -->
+        <div class="bio" ref="bio">
+          <p>Привет! Я фронтенд-разработчик с особой страстью к 3D-визуализации и интерактивным веб-приложениям. Моя цель — создавать впечатляющие цифровые опыты, объединяя творчество и технологии.</p>
+          <p>Специализируюсь на использовании современных технологий для создания уникальных пользовательских интерфейсов и 3D-визуализаций.</p>
+        </div>
+
+        <!-- Навыки -->
+        <div class="skills-section">
+          <h2 ref="skillsHeading">Навыки</h2>
+          <div class="skills-container" ref="skillsContainer">
+            <div class="skill" v-for="skill in skills" :key="skill.name">
+              <div class="skill-info">
+                <span class="skill-name">{{ skill.name }}</span>
+                <span class="skill-level">{{ skill.level }}%</span>
+              </div>
+              <div class="skill-bar-container">
+                <div class="skill-bar" :data-percentage="skill.level"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Карьерный путь -->
+    <div class="experience-section">
+      <h2 ref="timelineHeading">Опыт работы</h2>
+      <div class="timeline" ref="timelineContainer">
+        <div class="timeline-item" v-for="(job, index) in experience" :key="index">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <h3>{{ job.title }}</h3>
+            <div class="timeline-meta">
+              <span class="company">{{ job.company }}</span>
+              <span class="year">{{ job.year }}</span>
+            </div>
+            <p>{{ job.description }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import anime from 'animejs';
 
-export default {
-  name: 'About',
-  data() {
-    return {
-      skills: [
-        { name: 'Three.js', level: 90 },
-        { name: 'Vue.js', level: 85 },
-        { name: 'WebGL', level: 75 },
-        { name: 'JavaScript', level: 95 },
-        { name: 'Anime.js', level: 80 },
-        { name: '3D моделирование', level: 70 }
-      ],
-      experience: [
-        {
-          year: '2022-2024',
-          title: 'Старший 3D разработчик',
-          company: 'TechViz Studio',
-          description: 'Разработка 3D визуализаций для веб-проектов.'
-        },
-        {
-          year: '2020-2022',
-          title: 'Фронтенд-разработчик',
-          company: 'WebCraft Solutions',
-          description: 'Создание интерактивных веб-приложений.'
-        },
-        {
-          year: '2018-2020',
-          title: 'Дизайнер UI/UX',
-          company: 'Creative Minds',
-          description: 'Дизайн пользовательских интерфейсов.'
-        }
-      ]
-    }
+// Данные о навыках
+const skills = [
+  { name: 'Three.js', level: 90 },
+  { name: 'Vue.js', level: 85 },
+  { name: 'WebGL', level: 75 },
+  { name: 'JavaScript', level: 95 },
+  { name: 'CSS/SCSS', level: 88 },
+  { name: '3D моделирование', level: 70 }
+];
+
+// Опыт работы
+const experience = [
+  {
+    year: '2022-2024',
+    title: 'Старший 3D разработчик',
+    company: 'TechViz Studio',
+    description: 'Разработка интерактивных 3D визуализаций для веб-проектов. Создание конфигураторов продуктов и виртуальных туров.'
   },
-  mounted() {
-    this.initScrollAnimation();
-    this.initModel();
-    this.initSkillsAnimation();
-    this.initTimeline();
+  {
+    year: '2020-2022',
+    title: 'Frontend-разработчик',
+    company: 'WebCraft Solutions',
+    description: 'Разработка интерактивных веб-приложений с использованием Vue.js и Three.js. Оптимизация производительности и пользовательского опыта.'
   },
-  methods: {
-    initScrollAnimation() {
-      // Наблюдатель за скроллом для анимаций
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            anime({
-              targets: entry.target,
-              opacity: [0, 1],
-              translateY: [50, 0],
-              duration: 1000,
-              easing: 'easeOutExpo'
-            });
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.1 });
-
-      // Добавляем элементы для наблюдения
-      observer.observe(this.$refs.heading);
-      observer.observe(this.$refs.bio);
-      observer.observe(this.$refs.skillsHeading);
-      observer.observe(this.$refs.timelineHeading);
-    },
-
-    initModel() {
-      // Инициализация 3D модели персонажа
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(50, this.$refs.modelContainer.clientWidth / this.$refs.modelContainer.clientHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-
-      renderer.setSize(this.$refs.modelContainer.clientWidth, this.$refs.modelContainer.clientHeight);
-      this.$refs.modelContainer.appendChild(renderer.domElement);
-
-      // Добавление освещения
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
-
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      directionalLight.position.set(0, 10, 10);
-      scene.add(directionalLight);
-
-      // Позиционирование камеры
-      camera.position.z = 5;
-      camera.position.y = 1;
-
-      // Загрузка 3D модели (можно заменить на любую свою GLTF модель)
-      const loader = new GLTFLoader();
-      let model;
-
-      loader.load('/models/character.glb', (gltf) => {
-        model = gltf.scene;
-        model.scale.set(2, 2, 2);
-        scene.add(model);
-      }, undefined, (error) => {
-        console.error('Ошибка загрузки GLTF модели', error);
-
-        // Резервный вариант, если модель не загрузилась
-        const geometry = new THREE.TorusKnotGeometry(1, 0.4, 100, 16);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x2194ce,
-          wireframe: false
-        });
-        model = new THREE.Mesh(geometry, material);
-        scene.add(model);
-      });
-
-      // Анимация модели
-      const animate = () => {
-        requestAnimationFrame(animate);
-
-        if (model) {
-          model.rotation.y += 0.005;
-        }
-
-        renderer.render(scene, camera);
-      };
-
-      animate();
-
-      // Обработка изменения размера контейнера
-      window.addEventListener('resize', () => {
-        camera.aspect = this.$refs.modelContainer.clientWidth / this.$refs.modelContainer.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(this.$refs.modelContainer.clientWidth, this.$refs.modelContainer.clientHeight);
-      });
-    },
-
-    initSkillsAnimation() {
-      // Наблюдатель для анимации навыков
-      const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          // Анимируем каждый навык
-          anime({
-            targets: '.skill-bar',
-            width: function(el) {
-              return el.dataset.percentage + '%';
-            },
-            easing: 'easeInOutQuad',
-            duration: 1500,
-            delay: anime.stagger(100)
-          });
-
-          observer.unobserve(entries[0].target);
-        }
-      }, { threshold: 0.5 });
-
-      observer.observe(this.$refs.skillsContainer);
-    },
-
-    initTimeline() {
-      // Создание 3D временной шкалы опыта работы
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(60, this.$refs.timelineContainer.clientWidth / this.$refs.timelineContainer.clientHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-
-      renderer.setSize(this.$refs.timelineContainer.clientWidth, this.$refs.timelineContainer.clientHeight);
-      this.$refs.timelineContainer.appendChild(renderer.domElement);
-
-      camera.position.z = 10;
-
-      // Создание линии времени
-      const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-5, 0, 0),
-        new THREE.Vector3(5, 0, 0)
-      ]);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-      const line = new THREE.Line(lineGeometry, lineMaterial);
-      scene.add(line);
-
-      // Создание точек опыта
-      const experiencePoints = [];
-
-      this.experience.forEach((exp, index) => {
-        const position = (index - (this.experience.length - 1) / 2) * 3;
-
-        // Создаем сферу для каждого опыта
-        const sphereGeometry = new THREE.SphereGeometry(0.3, 32, 32);
-        const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0x2194ce });
-        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        sphere.position.set(position, 0, 0);
-
-        experiencePoints.push({
-          mesh: sphere,
-          data: exp,
-          position
-        });
-
-        scene.add(sphere);
-
-        // Добавляем текст с годом
-        const yearDiv = document.createElement('div');
-        yearDiv.className = 'timeline-year';
-        yearDiv.textContent = exp.year;
-        yearDiv.style.position = 'absolute';
-        yearDiv.style.color = 'white';
-        yearDiv.style.userSelect = 'none';
-        this.$refs.timelineContainer.appendChild(yearDiv);
-
-        const updatePosition = () => {
-          const vector = new THREE.Vector3(position, -1, 0);
-          vector.project(camera);
-
-          const x = (vector.x * 0.5 + 0.5) * this.$refs.timelineContainer.clientWidth;
-          const y = (-vector.y * 0.5 + 0.5) * this.$refs.timelineContainer.clientHeight;
-
-          yearDiv.style.left = `${x}px`;
-          yearDiv.style.top = `${y}px`;
-        };
-
-        updatePosition();
-        window.addEventListener('resize', updatePosition);
-      });
-
-      // Добавляем свет
-      const light = new THREE.PointLight(0xffffff, 1);
-      light.position.set(0, 0, 5);
-      scene.add(light);
-
-      const ambientLight = new THREE.AmbientLight(0x404040);
-      scene.add(ambientLight);
-
-      // Обработка наведения на точки опыта
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-
-      let hoveredPoint = null;
-      let infoPanel = null;
-
-      const onMouseMove = (event) => {
-        // Получаем позицию мыши
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-        // Проверяем пересечения
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(scene.children);
-
-        let found = false;
-
-        for (let i = 0; i < intersects.length; i++) {
-          const point = experiencePoints.find(p => p.mesh === intersects[i].object);
-
-          if (point) {
-            // При наведении на точку опыта
-            if (hoveredPoint !== point) {
-              hoveredPoint = point;
-
-              // Увеличиваем точку
-              anime({
-                targets: point.mesh.scale,
-                x: 1.5,
-                y: 1.5,
-                z: 1.5,
-                duration: 300,
-                easing: 'easeOutQuad'
-              });
-
-              // Показываем информацию
-              if (infoPanel) {
-                this.$refs.timelineContainer.removeChild(infoPanel);
-              }
-
-              infoPanel = document.createElement('div');
-              infoPanel.className = 'timeline-info';
-              infoPanel.innerHTML = `
-                <h3>${point.data.title}</h3>
-                <h4>${point.data.company}</h4>
-                <p>${point.data.description}</p>
-              `;
-
-              this.$refs.timelineContainer.appendChild(infoPanel);
-
-              // Позиционируем информационную панель
-              const vector = new THREE.Vector3(point.position, 1, 0);
-              vector.project(camera);
-
-              const x = (vector.x * 0.5 + 0.5) * this.$refs.timelineContainer.clientWidth;
-              const y = (-vector.y * 0.5 + 0.5) * this.$refs.timelineContainer.clientHeight;
-
-              infoPanel.style.position = 'absolute';
-              infoPanel.style.left = `${x - 100}px`;
-              infoPanel.style.top = `${y - 120}px`;
-              infoPanel.style.background = 'rgba(0, 0, 0, 0.8)';
-              infoPanel.style.color = 'white';
-              infoPanel.style.padding = '10px';
-              infoPanel.style.borderRadius = '5px';
-              infoPanel.style.width = '200px';
-            }
-
-            found = true;
-            break;
-          }
-        }
-
-        if (!found && hoveredPoint) {
-          // Возвращаем точку к исходному размеру
-          anime({
-            targets: hoveredPoint.mesh.scale,
-            x: 1,
-            y: 1,
-            z: 1,
-            duration: 300,
-            easing: 'easeOutQuad'
-          });
-
-          hoveredPoint = null;
-
-          // Удаляем информационную панель
-          if (infoPanel) {
-            this.$refs.timelineContainer.removeChild(infoPanel);
-            infoPanel = null;
-          }
-        }
-      };
-
-      renderer.domElement.addEventListener('mousemove', onMouseMove);
-
-      // Анимация
-      const animate = () => {
-        requestAnimationFrame(animate);
-
-        experiencePoints.forEach(point => {
-          point.mesh.rotation.y += 0.01;
-        });
-
-        renderer.render(scene, camera);
-      };
-
-      animate();
-
-      // Обработка изменения размера контейнера
-      window.addEventListener('resize', () => {
-        camera.aspect = this.$refs.timelineContainer.clientWidth / this.$refs.timelineContainer.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(this.$refs.timelineContainer.clientWidth, this.$refs.timelineContainer.clientHeight);
-      });
-    }
+  {
+    year: '2018-2020',
+    title: 'UI/UX дизайнер',
+    company: 'Creative Minds',
+    description: 'Создание пользовательских интерфейсов и проектирование опыта взаимодействия для веб-приложений и мобильных платформ.'
   }
-}
+];
+
+// Рефы для DOM элементов
+const heading = ref(null);
+const bio = ref(null);
+const skillsHeading = ref(null);
+const skillsContainer = ref(null);
+const timelineHeading = ref(null);
+const timelineContainer = ref(null);
+
+// Метод для анимации навыков
+const animateSkills = () => {
+  anime({
+    targets: '.skill-bar',
+    width: function(el) {
+      return el.dataset.percentage + '%';
+    },
+    easing: 'easeInOutQuad',
+    duration: 1500,
+    delay: anime.stagger(100)
+  });
+};
+
+// Метод для анимации элементов страницы при скролле
+const initScrollAnimation = () => {
+  // Наблюдатель за скроллом для анимаций
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        anime({
+          targets: entry.target,
+          opacity: [0, 1],
+          translateY: [50, 0],
+          duration: 1000,
+          easing: 'easeOutExpo'
+        });
+
+        // Для контейнера с навыками запускаем анимацию полосок
+        if (entry.target === skillsContainer.value) {
+          animateSkills();
+        }
+
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  // Добавляем элементы для наблюдения
+  if (heading.value) observer.observe(heading.value);
+  if (bio.value) observer.observe(bio.value);
+  if (skillsHeading.value) observer.observe(skillsHeading.value);
+  if (skillsContainer.value) observer.observe(skillsContainer.value);
+  if (timelineHeading.value) observer.observe(timelineHeading.value);
+  if (timelineContainer.value) observer.observe(timelineContainer.value);
+
+  return observer;
+};
+
+let observer;
+
+onMounted(() => {
+  // Инициализируем анимацию при прокрутке
+  observer = initScrollAnimation();
+
+  // Инициализируем анимацию при загрузке
+  anime({
+    targets: heading.value,
+    opacity: [0, 1],
+    translateY: [50, 0],
+    duration: 1000,
+    easing: 'easeOutExpo'
+  });
+});
+
+onBeforeUnmount(() => {
+  // Очистка наблюдателя при удалении компонента
+  if (observer) {
+    observer.disconnect();
+  }
+});
+
+// При смене маршрута дополнительная очистка
+onBeforeRouteLeave(() => {
+  console.log('Leaving About page');
+  if (observer) {
+    observer.disconnect();
+  }
+});
 </script>
 
 <style scoped>
 .about {
-  min-height: 100vh;
   padding: 2rem;
   color: white;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .heading {
   text-align: center;
   margin-bottom: 3rem;
-  opacity: 0;
+  font-size: 2.5rem;
+  position: relative;
+  opacity: 0; /* Для анимации появления */
 }
 
-.model-container {
-  height: 400px;
-  margin: 0 auto 3rem;
-  max-width: 800px;
+.heading::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #2194ce;
+  border-radius: 3px;
 }
 
-.content-container {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.bio {
-  margin-bottom: 3rem;
-  font-size: 1.2rem;
-  line-height: 1.6;
-  opacity: 0;
-}
-
-.skills-section {
+.content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
   margin-bottom: 4rem;
 }
 
+.profile-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gif-container {
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.profile-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.bio {
+  opacity: 0; /* Для анимации появления */
+}
+
+.bio p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #2194ce;
+  opacity: 0; /* Для анимации появления */
+}
+
 .skills-container {
-  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  opacity: 0; /* Для анимации появления */
 }
 
 .skill {
-  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.skill-info {
   display: flex;
-  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
 .skill-name {
-  width: 150px;
   font-weight: bold;
 }
 
 .skill-bar-container {
-  flex-grow: 1;
-  height: 10px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
   overflow: hidden;
-  margin: 0 20px;
 }
 
 .skill-bar {
   height: 100%;
-  width: 0%;
-  background-color: #2194ce;
-  border-radius: 5px;
+  width: 0%; /* Начальное значение для анимации */
+  background: linear-gradient(90deg, #2194ce, #21aece);
+  border-radius: 4px;
+  transition: width 1.5s ease-out;
 }
 
-.skill-percentage {
-  width: 50px;
-  text-align: right;
-}
-
-.timeline-section {
+.experience-section {
   margin-top: 4rem;
 }
 
-.timeline-container {
-  height: 500px;
+.timeline {
   position: relative;
+  margin-top: 2rem;
+  padding-left: 2rem;
+  opacity: 0; /* Для анимации появления */
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2.5rem;
+  top: 0;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #2194ce;
+  box-shadow: 0 0 0 4px rgba(33, 148, 206, 0.3);
+}
+
+.timeline-content {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-content h3 {
+  margin-top: 0;
+  color: #2194ce;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.company {
+  font-weight: bold;
+}
+
+.year {
+  padding: 0.2rem 0.6rem;
+  background: rgba(33, 148, 206, 0.2);
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-visual {
+    margin-bottom: 2rem;
+  }
+
+  .lottie-container {
+    max-width: 100%;
+  }
+
+  .timeline {
+    padding-left: 1.5rem;
+  }
+
+  .timeline-marker {
+    left: -2rem;
+  }
 }
 </style>
