@@ -649,6 +649,7 @@ class PortfolioThreeJS {
     }
 
     // Добавление 3D модели Ferrari в интро
+// Исправленный метод addCarToIntro без временной модели
     addCarToIntro(container) {
         // Создаем сцену для автомобиля
         const scene = new THREE.Scene();
@@ -665,7 +666,7 @@ class PortfolioThreeJS {
         const carContainer = document.createElement('div');
         carContainer.className = 'car-container';
         carContainer.style.position = 'absolute';
-        carContainer.style.right = '5%';
+        carContainer.style.left = '23%';
         carContainer.style.bottom = '10%';
         carContainer.style.zIndex = '1';
 
@@ -697,7 +698,7 @@ class PortfolioThreeJS {
         spotLight.penumbra = 0.1;
         scene.add(spotLight);
 
-        // Материалы, как в примере
+        // Материалы
         const bodyMaterial = new THREE.MeshPhysicalMaterial({
             color: 0xff0000,
             metalness: 1.0,
@@ -730,15 +731,23 @@ class PortfolioThreeJS {
         // Массив для колес
         const wheels = [];
 
-        // В ожидании загрузки показываем простую модель
-        this.createSimpleCar(scene);
+        // Добавляем прелоадер или индикатор загрузки вместо временной модели
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'car-loading';
+        loadingDiv.textContent = 'Загрузка модели...';
+        loadingDiv.style.position = 'absolute';
+        loadingDiv.style.top = '50%';
+        loadingDiv.style.left = '50%';
+        loadingDiv.style.transform = 'translate(-50%, -50%)';
+        loadingDiv.style.color = 'white';
+        carContainer.appendChild(loadingDiv);
 
         loader.load(
             'https://threejs.org/examples/models/gltf/ferrari.glb', // URL из примера
             (gltf) => {
-                // Удаляем временную модель
-                if (this.objects.character) {
-                    scene.remove(this.objects.character);
+                // Удаляем индикатор загрузки
+                if (loadingDiv.parentNode) {
+                    loadingDiv.parentNode.removeChild(loadingDiv);
                 }
 
                 const carModel = gltf.scene.children[0];
@@ -762,8 +771,6 @@ class PortfolioThreeJS {
                     carModel.getObjectByName('wheel_rr')
                 );
 
-                // НЕ добавляем тень и пол для полной прозрачности фона
-
                 // Масштабируем и позиционируем модель
                 carModel.scale.set(0.8, 0.8, 0.8);
                 carModel.position.set(0, 0, 0);
@@ -782,14 +789,22 @@ class PortfolioThreeJS {
                 this.objects.rotationGroup = rotationGroup;
             },
             (xhr) => {
+                const percentComplete = Math.round((xhr.loaded / xhr.total) * 100);
+                loadingDiv.textContent = `Загрузка модели: ${percentComplete}%`;
                 console.log((xhr.loaded / xhr.total * 100) + '% loaded');
             },
             (error) => {
                 console.error('An error happened during Ferrari model loading:', error);
+                // В случае ошибки загрузки GLTF модели, создаем запасную модель
+                loadingDiv.textContent = 'Не удалось загрузить модель';
+                setTimeout(() => {
+                    if (loadingDiv.parentNode) {
+                        loadingDiv.parentNode.removeChild(loadingDiv);
+                    }
+                    this.createSimpleCar(scene);
+                }, 1000);
             }
         );
-
-        // НЕ добавляем сетку для полной прозрачности фона
 
         // Сохраняем объекты
         this.scenes.character = scene;
@@ -827,7 +842,7 @@ class PortfolioThreeJS {
             if (this.objects.rotationGroup) {
                 this.objects.rotationGroup.rotation.y += 0.005; // Медленное вращение всей модели
             }
-            // Вращаем модель, если еще не загружен Ferrari
+            // Вращаем модель, если загружена запасная
             else if (this.objects.character) {
                 this.objects.character.rotation.y += 0.005;
             }
@@ -839,7 +854,6 @@ class PortfolioThreeJS {
 
         return carContainer;
     }
-
     // Создание простой модели автомобиля (запасной вариант)
     createSimpleCar(scene) {
         // Создаем группу для всей модели

@@ -23,7 +23,10 @@
       <h2 class="section-title">Обо мне</h2>
       <div class="about-content">
         <div class="about-image">
-          <div class="profile-container" ref="profileContainer"></div>
+          <!-- Заменяем 3D контейнер на контейнер с изображением -->
+          <div class="profile-container" ref="profileContainer">
+            <img src="../Web_Design_Development.gif" alt="Web Developer" class="developer-image" />
+          </div>
         </div>
         <div class="about-text" ref="aboutText">
           <p>Привет! Я Глеб, фронтенд-разработчик с особой страстью к 3D-визуализации и интерактивным веб-интерфейсам. Я специализируюсь на создании современных, отзывчивых и визуально привлекательных веб-приложений с использованием Vue.js, Three.js и других передовых технологий.</p>
@@ -234,8 +237,15 @@ const initPortfolio = () => {
   // Добавляем 3D модель автомобиля в интро
   portfolio3D.addCarToIntro(introContainer.value);
 
-  // Инициализируем 3D визуализацию профиля
-  portfolio3D.initProfileVisualization(profileContainer.value);
+  // Не инициализируем 3D визуализацию профиля, так как заменили на изображение
+  // Вместо этого анимируем изображение
+  anime({
+    targets: profileContainer.value,
+    opacity: [0, 1],
+    scale: [0.9, 1],
+    duration: 1000,
+    easing: 'easeOutExpo'
+  });
 
   // Инициализируем 3D предпросмотр проектов
   portfolio3D.initProjectsShowcase(projectsShowcase.value, projects);
@@ -380,6 +390,17 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border-radius: 50%;
   box-shadow: 0 10px 30px rgba(33, 148, 206, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+/* Стиль для изображения веб-разработчика */
+.developer-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .about-text {
