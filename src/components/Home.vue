@@ -10,8 +10,8 @@
       </div>
     </div>
 
-    <!-- 3D фон с плавно движущимися элементами -->
-    <div class="background" ref="backgroundScene"></div>
+<!--    &lt;!&ndash; 3D фон с плавно движущимися элементами &ndash;&gt;-->
+<!--    <div class="background" ref="backgroundScene"></div>-->
 
     <!-- Краткое представление -->
     <div class="about-intro" ref="aboutIntro">
@@ -93,7 +93,7 @@ const introContainer = ref(null);
 const title = ref(null);
 const subtitle = ref(null);
 const scrollIndicator = ref(null);
-const backgroundScene = ref(null);
+// const backgroundScene = ref(null);
 const aboutIntro = ref(null);
 const aboutSection = ref(null);
 const aboutText = ref(null);
@@ -133,7 +133,7 @@ const projects = reactive([
 
 // Состояние
 const state = reactive({
-  portfolio3D: null,
+  // portfolio3D: null,
   currentProject: null,
   isIntersecting: {},
   observer: null
@@ -221,7 +221,7 @@ const initPortfolio = () => {
   state.portfolio3D = portfolio3D;
 
   // Инициализируем фоновую сцену
-  portfolio3D.initBackgroundScene(backgroundScene.value);
+  // portfolio3D.initBackgroundScene(backgroundScene.value);
 
   // Создаем частицы для интро
   portfolio3D.createParticles(introContainer.value);

@@ -1,5 +1,7 @@
 <template>
   <div id="app">
+    <!-- Добавляем глобальный фон -->
+    <div class="global-background" ref="globalBackgroundScene"></div>
     <!-- Навигация -->
     <nav class="navigation" :class="{ 'scrolled': hasScrolled }">
       <div class="logo">
@@ -53,13 +55,15 @@
 
 <script>
 import anime from 'animejs';
+import PortfolioThreeJS from './PortfolioThreeJS';
 
 export default {
   name: 'App',
   data() {
     return {
       hasScrolled: false,
-      mobileMenuActive: false
+      mobileMenuActive: false,
+      portfolioBackground: null
     }
   },
   mounted() {
@@ -73,9 +77,17 @@ export default {
       delay: anime.stagger(100, {start: 300}),
       easing: 'easeOutExpo'
     });
+
+    // Инициализация глобального фона
+    this.initGlobalBackground();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+
+    // Очистка ресурсов фона
+    if (this.portfolioBackground) {
+      this.portfolioBackground.dispose();
+    }
   },
   methods: {
     handleScroll() {
@@ -97,6 +109,15 @@ export default {
     },
     closeMobileMenu() {
       this.mobileMenuActive = false;
+    },
+    initGlobalBackground() {
+      // Инициализация глобального фона
+      const backgroundElement = this.$refs.globalBackgroundScene;
+      if (backgroundElement) {
+        const portfolio3D = new PortfolioThreeJS();
+        portfolio3D.initBackgroundScene(backgroundElement);
+        this.portfolioBackground = portfolio3D;
+      }
     }
   }
 }
@@ -104,6 +125,16 @@ export default {
 
 <style>
 /* Общие стили */
+/* Добавляем стиль для глобального фона */
+.global-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
 * {
   margin: 0;
   padding: 0;
