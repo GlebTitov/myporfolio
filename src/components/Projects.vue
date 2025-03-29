@@ -20,35 +20,37 @@
       </div>
     </div>
 
-    <!-- Сетка проектов -->
-    <transition-group name="project-list" tag="div" class="projects-grid">
-      <div
-          v-for="project in filteredProjects"
-          :key="project.id"
-          class="project-card"
-          @click="viewProjectDetails(project)"
-      >
-        <div class="project-card-inner">
-          <!-- Карточка проекта с GIF-изображением -->
-          <div class="project-image">
-            <div class="gif-container" :class="getCategoryClass(project.category)">
-              <div class="overlay"></div>
+    <!-- Сетка проектов с улучшенной анимацией переключения -->
+    <div class="projects-container">
+      <div class="projects-grid">
+        <div
+            v-for="project in filteredProjects"
+            :key="project.id"
+            class="project-card"
+            @click="viewProjectDetails(project)"
+        >
+          <div class="project-card-inner">
+            <!-- Карточка проекта с GIF-изображением -->
+            <div class="project-image">
+              <div class="gif-container" :class="getCategoryClass(project.category)">
+                <div class="overlay"></div>
+              </div>
+              <span class="project-category">{{ project.category }}</span>
             </div>
-            <span class="project-category">{{ project.category }}</span>
-          </div>
-          <div class="project-info">
-            <h3 class="project-title">{{ project.title }}</h3>
-            <p class="project-description">{{ project.description }}</p>
-            <div class="project-action">
-              <router-link :to="`/project/${project.id}`" class="details-btn">
-                Подробнее
-                <span class="arrow-icon">→</span>
-              </router-link>
+            <div class="project-info">
+              <h3 class="project-title">{{ project.title }}</h3>
+              <p class="project-description">{{ project.description }}</p>
+              <div class="project-action">
+                <router-link :to="`/project/${project.id}`" class="details-btn">
+                  Подробнее
+                  <span class="arrow-icon">→</span>
+                </router-link>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </transition-group>
+    </div>
 
     <!-- Сообщение если проектов не найдено -->
     <div v-if="filteredProjects.length === 0" class="no-projects">
@@ -59,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import anime from 'animejs';
 
@@ -67,6 +69,7 @@ const router = useRouter();
 
 // Состояние компонента
 const activeCategory = ref('Все');
+const isFiltering = ref(false);
 
 // Категории проектов
 const categories = ref(['Все', '3D', 'Web', 'UI/UX', 'Animation']);
@@ -139,25 +142,75 @@ const filteredProjects = computed(() => {
   return projects.value.filter(p => p.category === activeCategory.value);
 });
 
-// Методы
-const filterProjects = (category) => {
-  // Проверяем, не выбрана ли уже эта категория
-  if (activeCategory.value === category) return;
+// Удалены методы анимации для transition-group, так как они больше не используются
 
-  // Устанавливаем новую активную категорию
+// Методы
+const filterProjects = async (category) => {
+  // Проверяем, не выбрана ли уже эта категория и не выполняется ли фильтрация
+  if (activeCategory.value === category || isFiltering.value) return;
+
+  // Устанавливаем флаг, что фильтрация началась
+  isFiltering.value = true;
+
+  // Анимация активной кнопки фильтра - без эффекта пружины
+  anime({
+    targets: '.filter-btn',
+    scale: function(el) {
+      return el.classList.contains('active') ? 1 : 1;
+    },
+    duration: 300,
+    easing: 'easeOutQuad'
+  });
+
+  // Эффект исчезновения текущих карточек
+  const cards = document.querySelectorAll('.project-card');
+
+  // Если карточки есть, делаем анимацию исчезновения
+  if (cards.length > 0) {
+    // Простое исчезновение текущих карточек
+    await anime({
+      targets: cards,
+      opacity: 0,
+      translateY: 10,
+      easing: 'easeOutQuad',
+      duration: 250,
+    }).finished;
+  }
+
+  // Меняем категорию
   activeCategory.value = category;
 
-  // Анимация кнопок фильтров
+  // Дожидаемся обновления DOM
+  await nextTick();
+
+  // Устанавливаем начальное состояние для новых карточек
+  document.querySelectorAll('.project-card').forEach(card => {
+    card.style.opacity = "0";
+    card.style.transform = "translateY(15px)";
+  });
+
+  // Очень короткая задержка для гарантии применения стилей
+  await new Promise(resolve => setTimeout(resolve, 10));
+
+  // Простое, прямое появление новых карточек
+  const newCards = document.querySelectorAll('.project-card');
+
+  // Единая анимация появления карточек - без сложных эффектов и пружины
   anime({
-    targets: '.filter-btn.active',
-    scale: [1, 1.1, 1],
-    duration: 500,
-    easing: 'easeOutElastic(1, .5)'
+    targets: newCards,
+    opacity: 1,
+    translateY: 0,
+    duration: 400,
+    easing: 'easeOutQuad',
+    complete: () => {
+      // Сброс флага фильтрации
+      isFiltering.value = false;
+    }
   });
 };
 
 const resetFilters = () => {
-  activeCategory.value = 'Все';
+  filterProjects('Все');
 };
 
 const viewProjectDetails = (project) => {
@@ -179,36 +232,36 @@ const getCategoryClass = (category) => {
 onMounted(() => {
   // Анимация заголовка
   anime.timeline({
-    easing: 'easeOutExpo'
+    easing: 'easeOutQuad'
   })
       .add({
         targets: '.title',
         opacity: [0, 1],
-        translateY: [30, 0],
-        duration: 1000
+        translateY: [20, 0],
+        duration: 800
       })
       .add({
         targets: '.title-underline',
-        width: [0, 80],
+        width: [0, 100],
         opacity: [0, 1],
-        duration: 800,
-        offset: '-=600'
-      })
-      .add({
-        targets: '.filter-btn',
-        opacity: [0, 1],
-        translateY: [20, 0],
-        delay: anime.stagger(80),
         duration: 600,
         offset: '-=400'
       })
       .add({
+        targets: '.filter-btn',
+        opacity: [0, 1],
+        translateY: [10, 0],
+        delay: anime.stagger(80),
+        duration: 500,
+        offset: '-=300'
+      })
+      .add({
         targets: '.project-card',
         opacity: [0, 1],
-        translateY: [30, 0],
-        delay: anime.stagger(80, {start: 300}),
-        duration: 800,
-        offset: '-=600'
+        translateY: [15, 0],
+        delay: anime.stagger(40),
+        duration: 500,
+        offset: '-=300'
       });
 });
 </script>
@@ -243,8 +296,9 @@ onMounted(() => {
   width: 0;
   background: linear-gradient(to right, #2194ce, #21ce93);
   margin: 0 auto;
-  border-radius: 2px;
+  border-radius: 4px;
   opacity: 0;
+  box-shadow: 0 0 10px rgba(33, 148, 206, 0.5);
 }
 
 /* Стили фильтров */
@@ -266,21 +320,88 @@ onMounted(() => {
   padding: 0.8rem 1.5rem;
   border-radius: 30px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   font-weight: 500;
   opacity: 0;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.filter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #2194ce, #21ce93);
+  border-radius: 30px;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.filter-btn::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #2194ce, #21ce93);
+  border-radius: 32px;
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
 .filter-btn:hover {
-  background: rgba(33, 148, 206, 0.2);
   transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(33, 148, 206, 0.2);
+  box-shadow: 0 8px 20px rgba(33, 148, 206, 0.3);
+  color: white;
+}
+
+.filter-btn:hover::before {
+  opacity: 0.2;
+}
+
+.filter-btn:hover::after {
+  opacity: 0.2;
 }
 
 .filter-btn.active {
   background: linear-gradient(135deg, #2194ce, #21ce93);
   border-color: transparent;
-  box-shadow: 0 5px 15px rgba(33, 148, 206, 0.3);
+  box-shadow: 0 8px 20px rgba(33, 148, 206, 0.4);
+  transform: translateY(-2px);
+}
+
+.filter-btn.active::after {
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+}
+
+/* Контейнер для анимированной сетки проектов */
+.projects-container {
+  min-height: 400px; /* Минимальная высота для предотвращения скачков интерфейса */
+  position: relative;
+  overflow: hidden; /* Предотвращает видимость элементов за пределами контейнера */
 }
 
 /* Сетка проектов */
@@ -288,23 +409,8 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 2rem;
-  min-height: 200px; /* Минимальная высота для предотвращения прыжков макета */
-}
-
-/* Анимации для списка проектов */
-.project-list-enter-active,
-.project-list-leave-active {
-  transition: all 0.5s ease;
-}
-
-.project-list-enter-from,
-.project-list-leave-to {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.project-list-move {
-  transition: transform 0.5s;
+  will-change: transform, opacity;
+  perspective: 1000px;
 }
 
 /* Стили карточки проекта */
@@ -312,16 +418,20 @@ onMounted(() => {
   background: rgba(15, 17, 36, 0.6);
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.4s ease;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1); /* Улучшенный timing function */
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05);
   height: 100%;
   display: flex;
+  will-change: transform, opacity;
+  transform-origin: center center;
+  backdrop-filter: blur(5px);
 }
 
 .project-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(33, 148, 206, 0.3);
+  border-color: rgba(33, 148, 206, 0.3);
 }
 
 .project-card-inner {
@@ -337,6 +447,7 @@ onMounted(() => {
   align-items: flex-end;
   justify-content: flex-end;
   padding: 1rem;
+  overflow: hidden;
 }
 
 /* Стили для GIF-контейнеров */
@@ -349,6 +460,11 @@ onMounted(() => {
   background-position: center;
   background-size: cover;
   z-index: 1;
+  transition: transform 0.5s ease;
+}
+
+.project-card:hover .gif-container {
+  transform: scale(1.05);
 }
 
 /* Оверлей для улучшения читаемости текста */
@@ -360,6 +476,11 @@ onMounted(() => {
   height: 100%;
   background: rgba(0, 0, 0, 0.3);
   z-index: 2;
+  transition: background 0.3s ease;
+}
+
+.project-card:hover .overlay {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* GIF-фоны для разных категорий */
@@ -392,6 +513,13 @@ onMounted(() => {
   font-weight: 600;
   position: relative;
   z-index: 3;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(3px);
+}
+
+.project-card:hover .project-category {
+  background: rgba(33, 148, 206, 0.7);
+  transform: translateY(-5px);
 }
 
 .project-info {
@@ -402,6 +530,11 @@ onMounted(() => {
   background: rgba(15, 17, 36, 0.9);
   position: relative;
   z-index: 3;
+  transition: background 0.3s ease;
+}
+
+.project-card:hover .project-info {
+  background: rgba(25, 27, 46, 0.9);
 }
 
 .project-title {
@@ -409,6 +542,23 @@ onMounted(() => {
   margin-bottom: 1rem;
   color: white;
   font-weight: 600;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.project-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(to right, #2194ce, #21ce93);
+  transition: width 0.3s ease;
+}
+
+.project-card:hover .project-title::after {
+  width: 60px;
 }
 
 .project-description {
@@ -452,6 +602,19 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   margin-top: 2rem;
+  animation: fadeIn 0.5s ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .no-projects p {
