@@ -39,8 +39,8 @@
             ></textarea>
           </div>
 
-          <button type="submit" class="submit-btn" ref="submitBtn">
-            <span>Отправить</span>
+          <button type="submit" class="submit-btn" ref="submitBtn" :disabled="isSubmitting">
+            <span>{{ isSubmitting ? 'Отправка...' : 'Отправить' }}</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -116,6 +116,20 @@
         <button @click="closeModal" class="close-btn">Закрыть</button>
       </div>
     </div>
+
+    <!-- Модальное окно ошибки отправки -->
+    <div class="error-modal" v-if="showErrorModal" ref="errorModal" @click="closeErrorModal">
+      <div class="modal-content" @click.stop>
+        <svg class="error-icon" viewBox="0 0 24 24" width="48" height="48" stroke="#e74c3c" stroke-width="2" fill="none">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <h3>Ошибка отправки</h3>
+        <p>К сожалению, возникла проблема при отправке сообщения. Пожалуйста, попробуйте позже или свяжитесь со мной напрямую по почте или телефону.</p>
+        <button @click="closeErrorModal" class="close-btn">Закрыть</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -136,8 +150,9 @@ const globeContainer = ref(null);
 const socialSection = ref(null);
 const socialIcons = ref([]);
 const successModal = ref(null);
+const errorModal = ref(null);
 
-// Состояние формы (упрощенное - убрано поле "тема")
+// Состояние формы
 const formData = ref({
   name: '',
   email: '',
@@ -145,17 +160,19 @@ const formData = ref({
 });
 
 const showSuccessModal = ref(false);
+const showErrorModal = ref(false);
+const isSubmitting = ref(false);
 
-// Функции для работы с Three.js
-let scene, camera, renderer, globe;
-let cleanupGlobe = null;
+// Telegram бот и чат ID
+const TELEGRAM_BOT_TOKEN = '7797120866:AAExHbmEFxejBazrkSjBQtbSU6cmMeNCUHQ';
+const TELEGRAM_CHAT_ID = '-1002686345108';
 
 // Методы для формы
-const submitForm = () => {
-  // Имитация отправки формы
-  console.log('Форма отправлена:', formData.value);
+const submitForm = async () => {
+  // Устанавливаем флаг отправки
+  isSubmitting.value = true;
 
-  // Анимация отправки формы
+  // Анимация кнопки отправки
   anime({
     targets: submitBtn.value,
     scale: [1, 0.9, 1],
@@ -163,8 +180,18 @@ const submitForm = () => {
     easing: 'easeInOutQuad'
   });
 
-  // Показываем модальное окно успеха
-  setTimeout(() => {
+  try {
+    // Формируем текст сообщения для Telegram
+    const messageText = `📬 Новая заявка с сайта!\n\n👤 Имя: ${formData.value.name}\n📧 Email: ${formData.value.email}\n\n💬 Сообщение:\n${formData.value.message}`;
+
+    // Отправляем сообщение в Telegram
+    const response = await sendToTelegram(messageText);
+
+    if (!response.ok) {
+      throw new Error('Не удалось отправить сообщение в Telegram');
+    }
+
+    // Показываем модальное окно успеха
     showSuccessModal.value = true;
 
     // Анимируем появление модального окна
@@ -182,7 +209,39 @@ const submitForm = () => {
       email: '',
       message: ''
     };
-  }, 600);
+  } catch (error) {
+    console.error('Ошибка при отправке формы:', error);
+
+    // Показываем модальное окно с ошибкой
+    showErrorModal.value = true;
+
+    // Анимируем появление модального окна с ошибкой
+    anime({
+      targets: errorModal.value,
+      opacity: [0, 1],
+      scale: [0.8, 1],
+      duration: 500,
+      easing: 'easeOutExpo'
+    });
+  } finally {
+    // Сбрасываем флаг отправки
+    isSubmitting.value = false;
+  }
+};
+
+// Функция для отправки сообщения в Telegram
+const sendToTelegram = async (message) => {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  const formData = new FormData();
+  formData.append('chat_id', TELEGRAM_CHAT_ID);
+  formData.append('text', message);
+  formData.append('parse_mode', 'HTML');
+
+  return fetch(url, {
+    method: 'POST',
+    body: formData
+  });
 };
 
 const closeModal = () => {
@@ -198,6 +257,24 @@ const closeModal = () => {
     }
   });
 };
+
+const closeErrorModal = () => {
+  // Анимируем закрытие модального окна ошибки
+  anime({
+    targets: errorModal.value,
+    opacity: 0,
+    scale: 0.8,
+    duration: 300,
+    easing: 'easeInOutQuad',
+    complete: () => {
+      showErrorModal.value = false;
+    }
+  });
+};
+
+// Функции для работы с Three.js
+let scene, camera, renderer, globe;
+let cleanupGlobe = null;
 
 // Инициализация 3D глобуса (сохраняем оригинальную функцию)
 const initGlobe = () => {
@@ -310,7 +387,7 @@ const initGlobe = () => {
   };
 };
 
-// Применение эффекта наведения к форме (упрощенный вариант)
+// Применение эффекта наведения к форме
 const apply3DFormEffect = () => {
   if (!contactForm.value) return;
 
@@ -525,13 +602,18 @@ onMounted(() => {
   letter-spacing: 0.5px;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(33, 148, 206, 0.4);
 }
 
-.submit-btn:active {
+.submit-btn:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .submit-btn svg {
@@ -540,7 +622,7 @@ onMounted(() => {
   transition: transform 0.3s ease;
 }
 
-.submit-btn:hover svg {
+.submit-btn:hover:not(:disabled) svg {
   transform: translateX(4px);
 }
 
@@ -639,7 +721,7 @@ onMounted(() => {
 }
 
 /* Модальное окно успешной отправки */
-.success-modal {
+.success-modal, .error-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -666,6 +748,10 @@ onMounted(() => {
 
 .success-icon {
   color: #21ceb8;
+  margin-bottom: 1rem;
+}
+
+.error-icon {
   margin-bottom: 1rem;
 }
 
