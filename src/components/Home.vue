@@ -8,8 +8,8 @@
       <div class="scroll-indicator" ref="scrollIndicator">
         <div class="scroll-arrow"></div>
       </div>
+      <img src="../Icon2.gif" alt="Web Development Animation" class="intro-gif">
     </div>
-
 
     <!-- Краткое представление -->
     <div class="about-intro" ref="aboutIntro">
@@ -130,6 +130,7 @@ const projects = reactive([
 
 // Состояние
 const state = reactive({
+  portfolio3D: null,
   currentProject: null,
   isIntersecting: {},
   observer: null
@@ -216,6 +217,9 @@ const initPortfolio = () => {
   const portfolio3D = new PortfolioThreeJS();
   state.portfolio3D = portfolio3D;
 
+  // Инициализируем фоновую сцену
+  portfolio3D.initBackgroundScene(document.body);
+
   // Создаем частицы для интро
   portfolio3D.createParticles(introContainer.value);
 
@@ -227,11 +231,7 @@ const initPortfolio = () => {
     scrollIndicator: scrollIndicator.value
   });
 
-  // Добавляем 3D модель автомобиля в интро
-  portfolio3D.addCarToIntro(introContainer.value);
-
-  // Не инициализируем 3D визуализацию профиля, так как заменили на изображение
-  // Вместо этого анимируем изображение
+  // Анимируем изображение профиля
   anime({
     targets: profileContainer.value,
     opacity: [0, 1],
@@ -282,15 +282,6 @@ onBeforeUnmount(() => {
   font-family: 'Poppins', Arial, sans-serif;
 }
 
-.background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-}
-
 .intro {
   height: 100vh;
   display: flex;
@@ -315,9 +306,17 @@ onBeforeUnmount(() => {
 .subtitle {
   font-size: 1.8rem;
   opacity: 0;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   font-weight: 300;
   color: rgba(255, 255, 255, 0.9);
+}
+
+.intro-gif {
+  width: 400px;
+  height: auto;
+  margin-bottom: 2rem;
+  mix-blend-mode: screen;
+  background-color: transparent;
 }
 
 .about-intro {
@@ -389,7 +388,6 @@ onBeforeUnmount(() => {
   background-color: #ffffff;
 }
 
-/* Стиль для изображения веб-разработчика */
 .developer-image {
   width: 100%;
   height: 100%;
@@ -530,6 +528,12 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
+.scroll-indicator {
+  margin: 10px 0 20px;
+  opacity: 0;
+  position: relative;
+}
+
 .scroll-arrow {
   width: 30px;
   height: 30px;
@@ -585,14 +589,6 @@ onBeforeUnmount(() => {
   }
 }
 
-.car-container {
-  transition: all 0.5s ease;
-}
-
-.car-container:hover {
-  transform: scale(1.05);
-}
-
 @media (max-width: 768px) {
   .title {
     font-size: 3.5rem;
@@ -604,6 +600,10 @@ onBeforeUnmount(() => {
 
   .about-intro {
     font-size: 1.4rem;
+  }
+
+  .intro-gif {
+    width: 320px;
   }
 
   .contact-links {
