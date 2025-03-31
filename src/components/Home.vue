@@ -1,5 +1,8 @@
 <template>
   <div class="home">
+    <!-- Контейнер для фоновой сцены -->
+    <div class="background" ref="backgroundScene"></div>
+
     <!-- 3D интро с анимированным заголовком -->
     <div class="intro" ref="introContainer">
       <h1 class="title" ref="title">Глеб Титов</h1>
@@ -91,6 +94,7 @@ const introContainer = ref(null);
 const title = ref(null);
 const subtitle = ref(null);
 const scrollIndicator = ref(null);
+const backgroundScene = ref(null);
 const aboutIntro = ref(null);
 const aboutSection = ref(null);
 const aboutText = ref(null);
@@ -206,8 +210,10 @@ const initIntersectionObserver = () => {
   ];
 
   sections.forEach((section, index) => {
-    section.id = `section-${index}`;
-    state.observer.observe(section);
+    if (section) {
+      section.id = `section-${index}`;
+      state.observer.observe(section);
+    }
   });
 };
 
@@ -217,11 +223,15 @@ const initPortfolio = () => {
   const portfolio3D = new PortfolioThreeJS();
   state.portfolio3D = portfolio3D;
 
-  // Инициализируем фоновую сцену
-  portfolio3D.initBackgroundScene(document.body);
+  // Инициализируем фоновую сцену с правильным контейнером
+  if (backgroundScene.value) {
+    portfolio3D.initBackgroundScene(backgroundScene.value);
+  }
 
   // Создаем частицы для интро
-  portfolio3D.createParticles(introContainer.value);
+  if (introContainer.value) {
+    portfolio3D.createParticles(introContainer.value);
+  }
 
   // Анимируем появление заголовка и подзаголовка
   portfolio3D.animateIntro({
@@ -232,24 +242,30 @@ const initPortfolio = () => {
   });
 
   // Анимируем изображение профиля
-  anime({
-    targets: profileContainer.value,
-    opacity: [0, 1],
-    scale: [0.9, 1],
-    duration: 1000,
-    easing: 'easeOutExpo'
-  });
+  if (profileContainer.value) {
+    anime({
+      targets: profileContainer.value,
+      opacity: [0, 1],
+      scale: [0.9, 1],
+      duration: 1000,
+      easing: 'easeOutExpo'
+    });
+  }
 
   // Инициализируем 3D предпросмотр проектов
-  portfolio3D.initProjectsShowcase(projectsShowcase.value, projects);
+  if (projectsShowcase.value) {
+    portfolio3D.initProjectsShowcase(projectsShowcase.value, projects);
 
-  // Добавляем обработчик события выбора проекта
-  projectsShowcase.value.addEventListener('project-selected', (event) => {
-    showProjectDetails(event.detail);
-  });
+    // Добавляем обработчик события выбора проекта
+    projectsShowcase.value.addEventListener('project-selected', (event) => {
+      showProjectDetails(event.detail);
+    });
+  }
 
   // Анимируем список навыков
-  portfolio3D.animateSkillsList(skillsList.value);
+  if (skillsList.value) {
+    portfolio3D.animateSkillsList(skillsList.value);
+  }
 
   // Инициализируем наблюдатель пересечений
   initIntersectionObserver();
@@ -280,6 +296,16 @@ onBeforeUnmount(() => {
   position: relative;
   color: white;
   font-family: 'Poppins', Arial, sans-serif;
+}
+
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .intro {
